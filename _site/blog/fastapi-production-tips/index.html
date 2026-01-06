@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FastAPI in Production: 5 Things I Wish I Knew Earlier · Shahwar Saleem</title>
+  <meta name="description" content="Practical lessons from running FastAPI services at scale, including performance optimization, testing strategies, and common pitfalls to avoid.">
+
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/blog/fastapi-production-tips/">
+  <link rel="alternate" type="application/rss+xml" title="Shahwar Saleem" href="/feed.xml">
+
+  
+</head>
+
+  <body>
+    <header>
+  <!-- No navigation - karpathy.ai style -->
+</header>
+
+
+    <main>
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">FastAPI in Production: 5 Things I Wish I Knew Earlier</h1>
+    <p class="post-meta">
+      <time datetime="2025-12-15T09:30:00-05:00">December 15, 2025</time>
+    </p>
+  </header>
+
+  <div class="post-content">
+    <p>After running FastAPI services handling millions of requests daily, here are five things I wish I’d known from the start.</p>
+
+<h2 id="1-use-dependency-injection-properly">1. Use Dependency Injection Properly</h2>
+
+<p>FastAPI’s dependency injection is powerful, but it’s easy to misuse. Here’s a common mistake:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Bad: Creating new connection every request
+</span><span class="nd">@app.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/users/{user_id}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="nc">Database</span><span class="p">()</span>  <span class="c1"># New connection!
+</span>    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="p">.</span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+
+<span class="c1"># Good: Reuse connection pool via dependency
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">get_db</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="p">.</span><span class="nf">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">conn</span>
+
+<span class="nd">@app.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/users/{user_id}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="nc">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">)):</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="p">.</span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="2-async-doesnt-mean-fast">2. Async Doesn’t Mean Fast</h2>
+
+<p>Don’t blindly make everything <code class="language-python highlighter-rouge"><span class="k">async</span></code>. CPU-bound operations should run in thread pools:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+
+<span class="n">executor</span> <span class="o">=</span> <span class="nc">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="nd">@app.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/process</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">process_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+    <span class="c1"># CPU-intensive work in thread pool
+</span>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="p">.</span><span class="nf">get_event_loop</span><span class="p">().</span><span class="nf">run_in_executor</span><span class="p">(</span>
+        <span class="n">executor</span><span class="p">,</span> <span class="n">expensive_computation</span><span class="p">,</span> <span class="n">data</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div></div>
+
+<h2 id="3-validate-early-validate-often">3. Validate Early, Validate Often</h2>
+
+<p>Pydantic models are great, but add custom validation for business logic:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">validator</span>
+
+<span class="k">class</span> <span class="nc">CreateUserRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="nd">@validator</span><span class="p">(</span><span class="sh">'</span><span class="s">email</span><span class="sh">'</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">email_must_be_corporate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span><span class="p">.</span><span class="nf">endswith</span><span class="p">(</span><span class="sh">'</span><span class="s">@company.com</span><span class="sh">'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="nc">ValueError</span><span class="p">(</span><span class="sh">'</span><span class="s">must be corporate email</span><span class="sh">'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+
+    <span class="nd">@validator</span><span class="p">(</span><span class="sh">'</span><span class="s">age</span><span class="sh">'</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">age_must_be_reasonable</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">18</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">120</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="nc">ValueError</span><span class="p">(</span><span class="sh">'</span><span class="s">invalid age</span><span class="sh">'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+</code></pre></div></div>
+
+<h2 id="4-structure-your-responses">4. Structure Your Responses</h2>
+
+<p>Use response models to control what gets returned:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">UserResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="c1"># Don't expose password_hash!
+</span>
+<span class="nd">@app.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/users/{user_id}</span><span class="sh">"</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">UserResponse</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="p">.</span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>  <span class="c1"># Has password_hash
+</span>    <span class="k">return</span> <span class="n">user</span>  <span class="c1"># FastAPI filters to response_model fields
+</span></code></pre></div></div>
+
+<h2 id="5-monitor-your-endpoints">5. Monitor Your Endpoints</h2>
+
+<p>Add middleware to track performance:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="n">starlette.middleware.base</span> <span class="kn">import</span> <span class="n">BaseHTTPMiddleware</span>
+
+<span class="k">class</span> <span class="nc">TimingMiddleware</span><span class="p">(</span><span class="n">BaseHTTPMiddleware</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">.</span><span class="nf">time</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="p">.</span><span class="nf">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+        <span class="c1"># Log slow requests
+</span>        <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="p">.</span><span class="nf">warning</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Slow request: </span><span class="si">{</span><span class="n">request</span><span class="p">.</span><span class="n">url</span><span class="p">.</span><span class="n">path</span><span class="si">}</span><span class="s"> took </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="p">.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">s</span><span class="sh">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span>
+
+<span class="n">app</span><span class="p">.</span><span class="nf">add_middleware</span><span class="p">(</span><span class="n">TimingMiddleware</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="bonus-testing-tips">Bonus: Testing Tips</h2>
+
+<p>Use <code class="language-python highlighter-rouge"><span class="n">TestClient</span></code> with proper fixtures:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">fastapi.testclient</span> <span class="kn">import</span> <span class="n">TestClient</span>
+<span class="kn">import</span> <span class="n">pytest</span>
+
+<span class="nd">@pytest.fixture</span>
+<span class="k">def</span> <span class="nf">client</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nc">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">test_create_user</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="sh">"</span><span class="s">/users</span><span class="sh">"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="sh">"</span><span class="s">email</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">test@company.com</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">age</span><span class="sh">"</span><span class="p">:</span> <span class="mi">25</span>
+    <span class="p">})</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="p">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">201</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="p">.</span><span class="nf">json</span><span class="p">()[</span><span class="sh">"</span><span class="s">email</span><span class="sh">"</span><span class="p">]</span> <span class="o">==</span> <span class="sh">"</span><span class="s">test@company.com</span><span class="sh">"</span>
+</code></pre></div></div>
+
+<hr />
+
+<p>FastAPI is a great framework, but like any tool, it requires understanding to use effectively. These patterns have saved me countless debugging hours.</p>
+
+  </div>
+</article>
+
+    </main>
+
+    <footer>
+  <div class="footer-links">
+    <a href="/feed.xml">RSS</a>
+  </div>
+</footer>
+
+  </body>
+</html>

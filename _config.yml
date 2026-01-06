@@ -1,0 +1,30 @@
+title: Shahwar Saleem
+description: Senior ML & Backend Engineer
+url: "https://shahwarcodes.github.io"
+baseurl: ""
+
+# Social
+github_username: shahwarcodes
+# twitter_username: your_twitter
+# linkedin_username: your_linkedin
+
+# Build settings
+markdown: kramdown
+permalink: /blog/:title/
+highlighter: rouge
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  auto_ids: true
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    default_lang: python
+
+# Exclude files from Jekyll build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - .git
+  - .gitignore

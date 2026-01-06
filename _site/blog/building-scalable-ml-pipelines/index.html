@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Building Scalable ML Pipelines: Lessons from Production · Shahwar Saleem</title>
+  <meta name="description" content="Key insights from building ML pipelines that process 30TB of data daily, including architecture decisions, common pitfalls, and practical tips for scaling ML...">
+
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/blog/building-scalable-ml-pipelines/">
+  <link rel="alternate" type="application/rss+xml" title="Shahwar Saleem" href="/feed.xml">
+
+  
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+  
+</head>
+
+  <body>
+    <header>
+  <!-- No navigation - karpathy.ai style -->
+</header>
+
+
+    <main>
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Building Scalable ML Pipelines: Lessons from Production</h1>
+    <p class="post-meta">
+      <time datetime="2026-01-03T05:00:00-05:00">January 3, 2026</time>
+    </p>
+  </header>
+
+  <div class="post-content">
+    <p>Over the past few years, I’ve built ML pipelines that process massive amounts of data in production. Here are some key lessons I’ve learned about building systems that scale.</p>
+
+<h2 id="the-architecture-challenge">The Architecture Challenge</h2>
+
+<p>When you’re processing 30TB of data daily, traditional batch processing approaches quickly show their limitations. The key insight is to design your pipeline as a directed acyclic graph (DAG) of independent, composable steps.</p>
+
+<h3 id="config-driven-design">Config-Driven Design</h3>
+
+<p>One of the best decisions we made was adopting a config-driven architecture. Instead of hard-coding pipeline logic, we define workflows in YAML:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="n">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PipelineConfig</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">resources</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Validate DAG structure
+</span>        <span class="k">return</span> <span class="nf">all</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="nf">_validate_step</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">steps</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This approach has several advantages:</p>
+
+<ol>
+  <li><strong>Reproducibility</strong>: Configs are versioned alongside code</li>
+  <li><strong>Flexibility</strong>: Easy to modify without code changes</li>
+  <li><strong>Testing</strong>: Can validate configs independently</li>
+</ol>
+
+<h2 id="the-math-behind-optimization">The Math Behind Optimization</h2>
+
+<p>When optimizing data processing, understanding the theoretical limits helps. For a pipeline with \(n\) stages, the total processing time \(T\) is:</p>
+
+\[T = \sum_{i=1}^{n} t_i + \sum_{i=1}^{n-1} d_i\]
+
+<p>where \(t_i\) is the processing time for stage \(i\) and \(d_i\) is the data transfer delay between stages.</p>
+
+<p>The key to optimization is minimizing both computation time and data movement. In practice, data transfer often dominates:</p>
+
+\[d_i \gg t_i\]
+
+<p>This means <strong>collocating compute and storage</strong> is crucial for performance.</p>
+
+<h2 id="practical-tips">Practical Tips</h2>
+
+<h3 id="1-embrace-idempotency">1. Embrace Idempotency</h3>
+
+<p>Every pipeline step should be idempotent. This makes retries safe and debugging easier:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">process_batch</span><span class="p">(</span><span class="n">batch_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># Check if already processed
+</span>    <span class="k">if</span> <span class="nf">output_exists</span><span class="p">(</span><span class="n">output_path</span><span class="p">):</span>
+        <span class="n">logger</span><span class="p">.</span><span class="nf">info</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Batch </span><span class="si">{</span><span class="n">batch_id</span><span class="si">}</span><span class="s"> already processed</span><span class="sh">"</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Process data
+</span>    <span class="n">data</span> <span class="o">=</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="nf">transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># Atomic write
+</span>    <span class="nf">write_atomic</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">output_path</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="2-monitor-everything">2. Monitor Everything</h3>
+
+<p>Use metrics to understand your pipeline’s behavior:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">prometheus_client</span> <span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Histogram</span>
+
+<span class="n">batch_processed</span> <span class="o">=</span> <span class="nc">Counter</span><span class="p">(</span><span class="sh">'</span><span class="s">batches_processed_total</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">Total batches processed</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">processing_time</span> <span class="o">=</span> <span class="nc">Histogram</span><span class="p">(</span><span class="sh">'</span><span class="s">batch_processing_seconds</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">Time to process batch</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="nd">@processing_time.time</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">process_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+    <span class="c1"># Processing logic
+</span>    <span class="n">batch_processed</span><span class="p">.</span><span class="nf">inc</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="3-handle-failures-gracefully">3. Handle Failures Gracefully</h3>
+
+<p>In distributed systems, failures are inevitable. Design for them:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">tenacity</span> <span class="kn">import</span> <span class="n">retry</span><span class="p">,</span> <span class="n">stop_after_attempt</span><span class="p">,</span> <span class="n">wait_exponential</span>
+
+<span class="nd">@retry</span><span class="p">(</span>
+    <span class="n">stop</span><span class="o">=</span><span class="nf">stop_after_attempt</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="n">wait</span><span class="o">=</span><span class="nf">wait_exponential</span><span class="p">(</span><span class="n">multiplier</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">fetch_data</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">.</span><span class="nf">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="p">.</span><span class="n">content</span>
+</code></pre></div></div>
+
+<h2 id="workflow-orchestration">Workflow Orchestration</h2>
+
+<p>We use <a href="https://flyte.org">Flyte</a> for orchestration. It provides:</p>
+
+<ul>
+  <li><strong>Versioning</strong>: Track pipeline versions over time</li>
+  <li><strong>Caching</strong>: Reuse results from previous runs</li>
+  <li><strong>Observability</strong>: Built-in metrics and logging</li>
+</ul>
+
+<p>Here’s a simple Flyte workflow:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">flytekit</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">workflow</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_parquet</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">transform_data</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">.</span><span class="nf">groupby</span><span class="p">(</span><span class="sh">'</span><span class="s">user_id</span><span class="sh">'</span><span class="p">).</span><span class="nf">agg</span><span class="p">({</span><span class="sh">'</span><span class="s">value</span><span class="sh">'</span><span class="p">:</span> <span class="sh">'</span><span class="s">sum</span><span class="sh">'</span><span class="p">})</span>
+
+<span class="nd">@workflow</span>
+<span class="k">def</span> <span class="nf">ml_pipeline</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">input_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nf">transform_data</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="key-takeaways">Key Takeaways</h2>
+
+<ol>
+  <li><strong>Design for scale from the start</strong> - Retrofitting is painful</li>
+  <li><strong>Make pipelines config-driven</strong> - Flexibility pays dividends</li>
+  <li><strong>Embrace functional patterns</strong> - Immutability and pure functions reduce bugs</li>
+  <li><strong>Monitor relentlessly</strong> - You can’t fix what you can’t measure</li>
+  <li><strong>Plan for failure</strong> - Retries, timeouts, and circuit breakers are essential</li>
+</ol>
+
+<p>Building scalable ML infrastructure is challenging, but following these principles has helped us maintain reliable systems processing terabytes of data daily.</p>
+
+<hr />
+
+<p><em>What challenges have you faced scaling ML pipelines? I’d love to hear your experiences.</em></p>
+
+  </div>
+</article>
+
+    </main>
+
+    <footer>
+  <div class="footer-links">
+    <a href="/feed.xml">RSS</a>
+  </div>
+</footer>
+
+  </body>
+</html>
