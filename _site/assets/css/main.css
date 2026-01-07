@@ -529,25 +529,41 @@ body {
 
     /* Timeline responsive */
     .entry.row {
-      grid-template-columns: 60px 80px 1fr 50px;
+      grid-template-columns: 50px 65px 1fr 40px;
+      gap: 0 10px;
     }
 
     .tech-logo {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .tech-stack {
+      gap: 4px;
     }
 
     .timespan {
-      font-size: 12px;
-      padding-right: 5px;
+      font-size: 11px;
+      padding-right: 3px;
+    }
+
+    .ico {
+      border-left-width: 1px;
+      padding-left: 8px;
+    }
+
+    .entry-dot {
+      width: 8px;
+      height: 8px;
+      left: -5px;
     }
 
     .ico img {
-      max-width: 60px;
+      max-width: 50px;
     }
 
     .desc {
-      padding-left: 10px;
-      font-size: 16px;
+      padding-left: 8px;
+      font-size: 15px;
     }
   }
