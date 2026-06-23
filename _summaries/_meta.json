@@ -1,8 +1,8 @@
 {
   "2026-06-23": {
     "easy": 1,
-    "medium": 1,
+    "medium": 0,
     "systemDesign": 1,
-    "qualified": true
+    "qualified": false
   }
 }
