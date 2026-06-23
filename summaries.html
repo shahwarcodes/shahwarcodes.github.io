@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Practice Log — Shahwar Saleem</title>
+<style>
+  /* ─── Full-viewport flex column — no fixed positioning needed ─── */
+  html, body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    max-width: 100% !important;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* ─── Site nav ─── */
+  .site-nav {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 44px;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    background: #fff;
+  }
+  .site-nav a { color: #888; text-decoration: none; letter-spacing: 0.03em; }
+  .site-nav a:hover { color: #333; }
+
+  /* ─── Contribution map strip ─── */
+  #contrib-strip {
+    flex-shrink: 0;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 20px 8px;
+    overflow-x: auto;
+  }
+
+  /* ─── App shell: takes all remaining height ─── */
+  .plog-app {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: #fff;
+    min-height: 0;
+  }
+
+  /* ─── Left panel ─── */
+  .plog-left {
+    width: 240px;
+    min-width: 240px;
+    background: #f7f8fa;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .plog-left-header {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .plog-left-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .btn-new {
+    background: #0055aa;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-new:hover { background: #003d80; }
+
+  .plog-days-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+
+  .day-card {
+    padding: 11px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .day-card:hover { background: #edf0f4; }
+  .day-card.active {
+    background: #e8eef8;
+    border-left-color: #0055aa;
+  }
+
+  .day-card-date {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+    line-height: 1.3;
+  }
+  .day-card.active .day-card-date { color: #0055aa; }
+
+  .day-card-meta {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+
+  .plog-empty-days {
+    padding: 24px 16px;
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ─── Right panel ─── */
+  .plog-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f4f5f8;
+  }
+
+  .plog-right-header {
+    padding: 18px 28px 14px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fff;
+    flex-shrink: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .plog-right-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .entry-count-badge {
+    background: #e8eef8;
+    color: #0055aa;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 2px 10px;
+  }
+
+  .plog-content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+
+  /* ─── Empty / loading states ─── */
+  .plog-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #bbb;
+    font-size: 15px;
+    gap: 10px;
+    text-align: center;
+  }
+  .plog-placeholder svg { opacity: 0.3; }
+
+  .plog-spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid #ccc;
+    border-top-color: #0055aa;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Entry cards ─── */
+  .entry-card {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e4e6eb;
+    padding: 22px 26px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .entry-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .type-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .type-badge.coding    { background: #dbeafe; color: #1d4ed8; }
+  .type-badge.design    { background: #fef3c7; color: #b45309; }
+  .type-badge.other     { background: #f3f4f6; color: #555; }
+
+  .entry-card-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.3;
+  }
+
+  /* ─── Markdown content ─── */
+  .md-body { font-family: Georgia, "Times New Roman", serif; font-size: 15px; line-height: 1.75; color: #333; }
+  .md-body h1, .md-body h2, .md-body h3 { font-family: inherit; margin: 1.2em 0 0.5em; color: #111; }
+  .md-body h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-top: 1.4em; margin-bottom: 0.4em; }
+  .md-body p { margin: 0 0 0.9em; }
+  .md-body ul, .md-body ol { padding-left: 22px; margin: 0 0 0.9em; }
+  .md-body li { margin-bottom: 4px; }
+  .md-body strong { font-weight: 700; color: #111; }
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    background: #f0f1f5;
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #c7254e;
+  }
+  .md-body pre {
+    background: #1e1e2e;
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0.8em 0 1.2em;
+    border: 1px solid #333;
+  }
+  .md-body pre code {
+    background: none;
+    color: #cdd6f4;
+    font-size: 13px;
+    padding: 0;
+    border-radius: 0;
+  }
+  .md-body blockquote {
+    border-left: 3px solid #0055aa;
+    margin: 0.8em 0;
+    padding: 4px 16px;
+    color: #555;
+    background: #f0f5ff;
+    border-radius: 0 6px 6px 0;
+  }
+  .md-body hr { border: none; border-top: 1px solid #eee; margin: 1.2em 0; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #888;
+    margin: 16px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* ─── Modals ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.hidden { display: none; }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 32px 36px;
+    width: 580px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 6px;
+  }
+  .modal-subtitle {
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 24px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #666;
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    color: #222;
+    background: #fafafa;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: #0055aa;
+    background: #fff;
+  }
+  .form-textarea {
+    resize: vertical;
+    line-height: 1.6;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    font-size: 13px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+
+  .btn-cancel {
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+  }
+  .btn-cancel:hover { background: #f5f5f5; }
+
+  .btn-submit {
+    background: #0055aa;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-submit:hover { background: #003d80; }
+  .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+  .form-hint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+  }
+  .form-hint a { color: #0055aa; }
+
+  .toast {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: #111;
+    color: #fff;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 2000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: #c0392b; }
+
+  .plog-settings-btn {
+    background: none;
+    border: none;
+    color: #bbb;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+  .plog-settings-btn:hover { color: #666; }
+
+  .entry-problem-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0055aa;
+    text-decoration: none;
+    border: 1.5px solid #c8d8f0;
+    border-radius: 5px;
+    padding: 3px 9px;
+    transition: background 0.12s;
+  }
+  .entry-problem-link:hover { background: #f0f5ff; text-decoration: none; }
+
+  .entry-card-actions { display: flex; gap: 6px; margin-left: auto; }
+
+  .btn-edit {
+    background: none;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn-edit:hover { border-color: #0055aa; color: #0055aa; background: #f0f5ff; }
+
+  .btn-delete {
+    background: none;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn-delete:hover { border-color: #c0392b; color: #c0392b; background: #fff5f5; }
+</style>
+
+<!-- Setup Modal -->
+<div id="setup-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 class="modal-title">Connect to GitHub</h2>
+    <p class="modal-subtitle">One-time setup — stored locally in your browser.</p>
+
+    <div class="form-group">
+      <label class="form-label">GitHub Personal Access Token</label>
+      <input id="setup-token" class="form-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+      <p class="form-hint">
+        Needs <strong>repo</strong> scope.
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=PracticeLog" target="_blank">Create one →</a>
+      </p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Repository</label>
+      <input id="setup-repo" class="form-input" type="text" value="shahwarcodes/shahwarcodes.github.io" />
+    </div>
+
+    <div class="modal-actions">
+      <button id="setup-save-btn" class="btn-submit">Save &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / Edit Entry Modal -->
+<div id="entry-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="entry-modal-title" class="modal-title">New Entry</h2>
+    <p id="entry-modal-subtitle" class="modal-subtitle"></p>
+
+    <div class="form-group">
+      <label class="form-label">Problem Name</label>
+      <input id="entry-name" class="form-input" type="text" placeholder="e.g. Design a URL Shortener" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select id="entry-type" class="form-select">
+        <option value="Coding">Coding</option>
+        <option value="System Design">System Design</option>
+        <option value="Behavioral">Behavioral</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Problem Link</label>
+      <input id="entry-link" class="form-input" type="url" placeholder="https://leetcode.com/problems/..." />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Problem Statement</label>
+      <textarea id="entry-statement" class="form-textarea" rows="4" placeholder="Paste or summarize the problem..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Solution</label>
+      <textarea id="entry-solution" class="form-textarea" rows="8" placeholder="Walk through your approach, complexity, key insights..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button id="entry-cancel-btn" class="btn-cancel">Cancel</button>
+      <button id="entry-submit-btn" class="btn-submit">Post Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Contribution map strip -->
+<div id="contrib-strip" style="flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 20px 8px;overflow-x:auto;">
+  <div id="contrib-map" style="display:inline-block;"></div>
+</div>
+
+<!-- App -->
+<div class="plog-app">
+
+  <!-- Left: day list -->
+  <div class="plog-left">
+    <div class="plog-left-header">
+      <span class="plog-left-title">Practice Log</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="settings-btn" class="plog-settings-btn" title="Settings">⚙</button>
+        <button id="new-entry-btn" class="btn-new">+ New</button>
+      </div>
+    </div>
+    <div id="days-list" class="plog-days-list">
+      <div class="plog-placeholder"><div class="plog-spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Right: content -->
+  <div class="plog-right">
+    <div id="right-header" class="plog-right-header" style="display:none;">
+      <h2 id="right-date"></h2>
+      <span id="right-count" class="entry-count-badge"></span>
+    </div>
+    <div class="plog-content-scroll">
+      <div id="right-placeholder" class="plog-placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span>Select a day to view entries</span>
+      </div>
+      <div id="right-content" style="display:none;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+(function() {
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const state = {
+    token: localStorage.getItem('plog_token'),
+    repo:  localStorage.getItem('plog_repo') || 'shahwarcodes/shahwarcodes.github.io',
+    files: [],       // [{name, path, sha}]
+    selected: null,  // date string 'YYYY-MM-DD'
+    editMode: null,  // null | { dateStr, entryIndex } when editing existing entry
+  };
+
+  const API = 'https://api.github.com';
+  const BRANCH = 'main';
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function todayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function formatDisplayDate(dateStr) {
+    // 'YYYY-MM-DD' → 'Tuesday, Jun 23'
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+
+  function formatCardDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const today = todayStr();
+    if (dateStr === today) return 'Today';
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split('T')[0];
+    if (dateStr === yStr) return 'Yesterday';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  function encodeB64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  function decodeB64(str) {
+    return decodeURIComponent(escape(atob(str.replace(/\n/g, ''))));
+  }
+
+  function headers() {
+    return {
+      'Authorization': `token ${state.token}`,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast'; }, 3000);
+  }
+
+  // ── GitHub API ─────────────────────────────────────────────────────────────
+
+  async function apiListSummaries() {
+    const res = await fetch(`${API}/repos/${state.repo}/contents/_summaries`, { headers: headers() });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+    const data = await res.json();
+    return data.filter(f => f.name.endsWith('.md') && f.name !== '.gitkeep');
+  }
+
+  async function apiGetFile(path) {
+    const res = await fetch(`${API}/repos/${state.repo}/contents/${path}`, { headers: headers() });
+    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+    const data = await res.json();
+    return { content: decodeB64(data.content), sha: data.sha };
+  }
+
+  async function apiPutFile(path, content, sha) {
+    const body = {
+      message: `plog: update ${path}`,
+      content: encodeB64(content),
+      branch: BRANCH,
+    };
+    if (sha) body.sha = sha;
+    const res = await fetch(`${API}/repos/${state.repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub API ${res.status}`);
+    }
+    return res.json();
+  }
+
+  // ── Markdown parsing ───────────────────────────────────────────────────────
+
+  function stripFrontmatter(md) {
+    return md.replace(/^---[\s\S]*?---\n?/, '').trim();
+  }
+
+  function parseEntries(md) {
+    const content = stripFrontmatter(md);
+    if (!content) return [];
+
+    // Split on lines that start with ## (entry headers)
+    const chunks = content.split(/\n(?=## \[)/);
+    return chunks.map(chunk => {
+      chunk = chunk.trim();
+      if (!chunk) return null;
+
+      // Parse ## [Type] Problem Name
+      const headerMatch = chunk.match(/^## \[([^\]]+)\]\s+(.+)\n?/);
+      const type = headerMatch ? headerMatch[1].trim() : 'Other';
+      const name = headerMatch ? headerMatch[2].trim() : chunk.split('\n')[0].replace(/^##\s*/, '');
+
+      // Remove the header line, keep the body
+      const body = chunk.replace(/^## \[[^\]]+\]\s+.+\n?/, '').trim();
+
+      return { type, name, body };
+    }).filter(Boolean);
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+
+  function typeBadgeClass(type) {
+    const t = type.toLowerCase();
+    if (t.includes('coding') || t.includes('algorithm') || t.includes('leetcode')) return 'coding';
+    if (t.includes('design') || t.includes('system')) return 'design';
+    return 'other';
+  }
+
+  function renderEntries(entries, dateStr) {
+    if (!entries.length) {
+      return '<div class="plog-placeholder"><span>No entries in this file.</span></div>';
+    }
+    return entries.map((e, idx) => {
+      const linkMatch      = e.body.match(/\*\*Link:\*\*\s*(\S+)/i);
+      const statementMatch = e.body.match(/\*\*Problem Statement:\*\*\s*([\s\S]*?)(?=\*\*Solution:\*\*|\*\*[A-Z]|$)/i);
+      const solutionMatch  = e.body.match(/\*\*Solution:\*\*\s*([\s\S]*?)(?=\*\*[A-Z]|$)/i);
+
+      const linkHtml = linkMatch
+        ? `<a href="${escapeHtml(linkMatch[1])}" target="_blank" class="entry-problem-link">↗ View Problem</a>`
+        : '';
+
+      const statementHtml = statementMatch && statementMatch[1].trim()
+        ? `<div class="section-label">Problem Statement</div>
+           <div class="md-body">${marked.parse(statementMatch[1].trim())}</div>`
+        : '';
+
+      const solutionHtml = solutionMatch && solutionMatch[1].trim()
+        ? `<div class="section-label">Solution</div>
+           <div class="md-body">${marked.parse(solutionMatch[1].trim())}</div>`
+        : (!linkMatch && !statementMatch ? `<div class="md-body">${marked.parse(e.body)}</div>` : '');
+
+      const badgeCls = typeBadgeClass(e.type);
+      return `
+        <div class="entry-card">
+          <div class="entry-card-header">
+            <span class="type-badge ${badgeCls}">${e.type}</span>
+            <span class="entry-card-title">${escapeHtml(e.name)}</span>
+            ${linkHtml}
+            <div class="entry-card-actions">
+              <button class="btn-edit" data-date="${dateStr}" data-index="${idx}">Edit</button>
+              <button class="btn-delete" data-date="${dateStr}" data-index="${idx}">Delete</button>
+            </div>
+          </div>
+          ${statementHtml}${solutionHtml}
+        </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderDayCards() {
+    const list = document.getElementById('days-list');
+    if (!state.files.length) {
+      list.innerHTML = '<div class="plog-empty-days">No entries yet.<br>Hit <strong>+ New</strong> to add your first.</div>';
+      return;
+    }
+    list.innerHTML = state.files.map(f => {
+      const dateStr = f.name.replace('.md', '');
+      const isActive = state.selected === dateStr;
+      const count = f._entryCount != null ? `${f._entryCount} ${f._entryCount === 1 ? 'entry' : 'entries'}` : '';
+      return `<div class="day-card${isActive ? ' active' : ''}" data-date="${dateStr}">
+        <div class="day-card-date">${formatCardDate(dateStr)}</div>
+        <div class="day-card-meta">${count}</div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.day-card').forEach(el => {
+      el.addEventListener('click', () => selectDay(el.dataset.date));
+    });
+  }
+
+  async function selectDay(dateStr) {
+    state.selected = dateStr;
+    renderDayCards();
+
+    // Show loading in right panel
+    document.getElementById('right-placeholder').style.display = 'none';
+    document.getElementById('right-content').style.display = 'none';
+    document.getElementById('right-header').style.display = 'none';
+
+    const rightContent = document.getElementById('right-content');
+    rightContent.innerHTML = '<div class="plog-placeholder"><div class="plog-spinner"></div></div>';
+    rightContent.style.display = 'block';
+
+    try {
+      const filePath = `_summaries/${dateStr}.md`;
+      const { content } = await apiGetFile(filePath);
+      const entries = parseEntries(content);
+
+      // Update entry count on the file record
+      const fileRec = state.files.find(f => f.name === dateStr + '.md');
+      if (fileRec) { fileRec._entryCount = entries.length; renderDayCards(); }
+
+      // Render header
+      const header = document.getElementById('right-header');
+      document.getElementById('right-date').textContent = formatDisplayDate(dateStr);
+      document.getElementById('right-count').textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
+      header.style.display = 'flex';
+
+      rightContent.innerHTML = renderEntries(entries, dateStr);
+
+      // Wire up edit/delete buttons
+      rightContent.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(btn.dataset.date, parseInt(btn.dataset.index), entries));
+      });
+      rightContent.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => deleteEntry(btn.dataset.date, parseInt(btn.dataset.index), entries));
+      });
+    } catch (err) {
+      rightContent.innerHTML = `<div class="plog-placeholder" style="color:#c0392b;">Failed to load: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ── Load days ──────────────────────────────────────────────────────────────
+
+  async function loadDays() {
+    const list = document.getElementById('days-list');
+    list.innerHTML = '<div class="plog-placeholder"><div class="plog-spinner"></div></div>';
+
+    try {
+      const files = await apiListSummaries();
+      state.files = files
+        .sort((a, b) => b.name.localeCompare(a.name)); // newest first
+      renderDayCards();
+
+      // Auto-select today if it exists
+      const today = todayStr();
+      const todayFile = state.files.find(f => f.name === today + '.md');
+      if (todayFile) {
+        selectDay(today);
+      } else if (state.files.length) {
+        // Auto-select the most recent day
+        selectDay(state.files[0].name.replace('.md', ''));
+      }
+    } catch (err) {
+      list.innerHTML = `<div class="plog-empty-days" style="color:#c0392b;">Error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ── Edit entry ─────────────────────────────────────────────────────────────
+
+  function openEditModal(dateStr, entryIndex, entries) {
+    const e = entries[entryIndex];
+    if (!e) return;
+
+    state.editMode = { dateStr, entryIndex };
+
+    // Pre-fill fields
+    document.getElementById('entry-modal-title').textContent = 'Edit Entry';
+    document.getElementById('entry-modal-subtitle').textContent = formatDisplayDate(dateStr);
+    document.getElementById('entry-name').value = e.name;
+    document.getElementById('entry-type').value = e.type;
+    document.getElementById('entry-submit-btn').textContent = 'Save Changes';
+
+    const linkMatch      = e.body.match(/\*\*Link:\*\*\s*(\S+)/i);
+    const statementMatch = e.body.match(/\*\*Problem Statement:\*\*\s*([\s\S]*?)(?=\*\*Solution:\*\*|\*\*[A-Z]|$)/i);
+    const solutionMatch  = e.body.match(/\*\*Solution:\*\*\s*([\s\S]*?)(?=\*\*[A-Z]|$)/i);
+    document.getElementById('entry-link').value      = linkMatch      ? linkMatch[1].trim()      : '';
+    document.getElementById('entry-statement').value = statementMatch ? statementMatch[1].trim() : '';
+    document.getElementById('entry-solution').value  = solutionMatch  ? solutionMatch[1].trim()  : e.body;
+
+    document.getElementById('entry-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('entry-name').focus(), 50);
+  }
+
+  function replaceEntryInContent(fullContent, entryIndex, newEntryMd) {
+    const fmMatch = fullContent.match(/^(---[\s\S]*?---\n?)/);
+    const frontmatter = fmMatch ? fmMatch[1] : '';
+    const body = stripFrontmatter(fullContent);
+    const chunks = body.split(/\n(?=## \[)/);
+    chunks[entryIndex] = newEntryMd;
+    return frontmatter + '\n' + chunks.map(c => c.trim()).join('\n\n') + '\n';
+  }
+
+  // ── New entry ──────────────────────────────────────────────────────────────
+
+  function formatEntryMarkdown(name, type, link, statement, solution) {
+    const parts = [`## [${type}] ${name}`, ''];
+    if (link.trim()) {
+      parts.push(`**Link:** ${link.trim()}`, '');
+    }
+    if (statement.trim()) {
+      parts.push('**Problem Statement:**', '', statement.trim(), '');
+    }
+    if (solution.trim()) {
+      parts.push('**Solution:**', '', solution.trim(), '');
+    }
+    return parts.join('\n');
+  }
+
+  async function submitEntry(name, type, link, statement, solution) {
+    const today = todayStr();
+    const filePath = `_summaries/${today}.md`;
+    const newEntry = formatEntryMarkdown(name, type, link, statement, solution);
+
+    let existingContent = null;
+    let existingSha = null;
+
+    // Try to get existing file
+    try {
+      const file = await apiGetFile(filePath);
+      existingContent = file.content;
+      existingSha = file.sha;
+    } catch (e) {
+      // File doesn't exist yet — will create
+    }
+
+    let finalContent;
+    if (existingContent) {
+      finalContent = existingContent.trimEnd() + '\n\n' + newEntry + '\n';
+    } else {
+      finalContent = `---\ndate: ${today}\n---\n\n` + newEntry + '\n';
+    }
+
+    await apiPutFile(filePath, finalContent, existingSha);
+
+    // Update local state
+    const exists = state.files.find(f => f.name === today + '.md');
+    if (!exists) {
+      state.files.unshift({ name: today + '.md', path: filePath, sha: existingSha });
+    }
+
+    // Refresh
+    await loadDays();
+    selectDay(today);
+  }
+
+  async function deleteEntry(dateStr, entryIndex, entries) {
+    if (!confirm(`Delete "${entries[entryIndex].name}"?`)) return;
+    try {
+      const filePath = `_summaries/${dateStr}.md`;
+      const { content, sha } = await apiGetFile(filePath);
+      const fmMatch = content.match(/^(---[\s\S]*?---\n?)/);
+      const frontmatter = fmMatch ? fmMatch[1] : '';
+      const body = stripFrontmatter(content);
+      const chunks = body.split(/\n(?=## \[)/).map(c => c.trim()).filter(Boolean);
+      chunks.splice(entryIndex, 1);
+
+      if (chunks.length === 0) {
+        // Last entry — delete the whole file
+        await fetch(`${API}/repos/${state.repo}/contents/${filePath}`, {
+          method: 'DELETE',
+          headers: headers(),
+          body: JSON.stringify({ message: `plog: delete ${filePath}`, sha, branch: BRANCH }),
+        });
+        state.files = state.files.filter(f => f.name !== dateStr + '.md');
+        state.selected = null;
+        renderDayCards();
+        document.getElementById('right-header').style.display = 'none';
+        document.getElementById('right-content').style.display = 'none';
+        document.getElementById('right-placeholder').style.display = 'flex';
+      } else {
+        const finalContent = frontmatter + '\n' + chunks.join('\n\n') + '\n';
+        await apiPutFile(filePath, finalContent, sha);
+
+        // Re-render immediately from local state — don't re-fetch (avoids cache lag)
+        const remaining = entries.filter((_, i) => i !== entryIndex);
+        const fileRec = state.files.find(f => f.name === dateStr + '.md');
+        if (fileRec) fileRec._entryCount = remaining.length;
+        renderDayCards();
+        document.getElementById('right-count').textContent =
+          `${remaining.length} ${remaining.length === 1 ? 'entry' : 'entries'}`;
+        document.getElementById('right-content').innerHTML = renderEntries(remaining, dateStr);
+        document.getElementById('right-content').querySelectorAll('.btn-edit').forEach(btn => {
+          btn.addEventListener('click', () => openEditModal(btn.dataset.date, parseInt(btn.dataset.index), remaining));
+        });
+        document.getElementById('right-content').querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', () => deleteEntry(btn.dataset.date, parseInt(btn.dataset.index), remaining));
+        });
+      }
+      showToast('Entry deleted');
+    } catch (err) {
+      showToast('Delete failed: ' + err.message, true);
+    }
+  }
+
+  async function saveEditedEntry(name, type, link, statement, solution) {
+    const { dateStr, entryIndex } = state.editMode;
+    const filePath = `_summaries/${dateStr}.md`;
+    const { content, sha } = await apiGetFile(filePath);
+    const updatedEntry = formatEntryMarkdown(name, type, link, statement, solution);
+    const finalContent = replaceEntryInContent(content, entryIndex, updatedEntry);
+    await apiPutFile(filePath, finalContent, sha);
+    selectDay(dateStr);
+  }
+
+  // ── Setup ──────────────────────────────────────────────────────────────────
+
+  function showSetupModal() {
+    document.getElementById('setup-modal').classList.remove('hidden');
+  }
+
+  document.getElementById('setup-save-btn').addEventListener('click', async () => {
+    const token = document.getElementById('setup-token').value.trim();
+    const repo  = document.getElementById('setup-repo').value.trim();
+    if (!token) { showToast('Enter a token', true); return; }
+
+    localStorage.setItem('plog_token', token);
+    localStorage.setItem('plog_repo', repo);
+    state.token = token;
+    state.repo  = repo;
+
+    document.getElementById('setup-modal').classList.add('hidden');
+    await loadDays();
+  });
+
+  // ── New entry modal ────────────────────────────────────────────────────────
+
+  document.getElementById('new-entry-btn').addEventListener('click', () => {
+    state.editMode = null;
+    const today = todayStr();
+    document.getElementById('entry-modal-title').textContent = 'New Entry';
+    document.getElementById('entry-modal-subtitle').textContent = 'Adding to ' + formatDisplayDate(today);
+    document.getElementById('entry-name').value = '';
+    document.getElementById('entry-type').value = 'Coding';
+    document.getElementById('entry-solution').value = '';
+    document.getElementById('entry-comments').value = '';
+    document.getElementById('entry-submit-btn').textContent = 'Post Entry';
+    document.getElementById('entry-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('entry-name').focus(), 50);
+  });
+
+  document.getElementById('entry-cancel-btn').addEventListener('click', () => {
+    state.editMode = null;
+    document.getElementById('entry-modal').classList.add('hidden');
+  });
+
+  document.getElementById('entry-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('entry-modal')) {
+      state.editMode = null;
+      document.getElementById('entry-modal').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('entry-submit-btn').addEventListener('click', async () => {
+    const name      = document.getElementById('entry-name').value.trim();
+    const type      = document.getElementById('entry-type').value;
+    const link      = document.getElementById('entry-link').value.trim();
+    const statement = document.getElementById('entry-statement').value;
+    const solution  = document.getElementById('entry-solution').value;
+
+    if (!name) { showToast('Problem name required', true); return; }
+    if (!solution.trim() && !statement.trim()) { showToast('Add a solution or problem statement', true); return; }
+
+    const btn = document.getElementById('entry-submit-btn');
+    const isEdit = !!state.editMode;
+    btn.disabled = true;
+    btn.textContent = isEdit ? 'Saving…' : 'Posting…';
+
+    try {
+      if (isEdit) {
+        await saveEditedEntry(name, type, link, statement, solution);
+        showToast('Entry updated ✓');
+      } else {
+        await submitEntry(name, type, link, statement, solution);
+        showToast('Entry saved ✓');
+      }
+      document.getElementById('entry-modal').classList.add('hidden');
+      state.editMode = null;
+    } catch (err) {
+      showToast('Error: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = isEdit ? 'Save Changes' : 'Post Entry';
+    }
+  });
+
+  // ── Settings (re-open setup) ───────────────────────────────────────────────
+  document.getElementById('settings-btn').addEventListener('click', () => {
+    if (state.token) document.getElementById('setup-token').value = state.token;
+    if (state.repo)  document.getElementById('setup-repo').value  = state.repo;
+    document.getElementById('setup-modal').classList.remove('hidden');
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  marked.setOptions({ gfm: true, breaks: true });
+
+  if (!state.token) {
+    showSetupModal();
+  } else {
+    loadDays();
+  }
+
+})();
+</script>
+
+</body>
+</html>
