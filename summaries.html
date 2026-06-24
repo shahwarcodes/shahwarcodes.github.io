@@ -229,6 +229,18 @@
   .type-badge.design    { background: #fef3c7; color: #b45309; }
   .type-badge.other     { background: #f3f4f6; color: #555; }
 
+  .diff-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .diff-badge.easy   { background: #d1fae5; color: #059669; }
+  .diff-badge.medium { background: #fef3c7; color: #d97706; }
+  .diff-badge.hard   { background: #fee2e2; color: #dc2626; }
+
   .entry-card-title {
     font-size: 17px;
     font-weight: 700;
@@ -464,6 +476,16 @@
   }
   .btn-delete:hover { border-color: #c0392b; color: #c0392b; background: #fff5f5; }
 </style>
+</head>
+<body>
+
+<div class="site-nav">
+  <div></div>
+  <nav style="display:flex;gap:22px;">
+    <a href="/">Home</a>
+    <a href="/summaries">Practice Log</a>
+  </nav>
+</div>
 
 <!-- Setup Modal -->
 <div id="setup-modal" class="modal-overlay hidden">
@@ -502,14 +524,25 @@
       <input id="entry-name" class="form-input" type="text" placeholder="e.g. Design a URL Shortener" />
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Type</label>
-      <select id="entry-type" class="form-select">
-        <option value="Coding">Coding</option>
-        <option value="System Design">System Design</option>
-        <option value="Behavioral">Behavioral</option>
-        <option value="Other">Other</option>
-      </select>
+    <div class="form-group" style="display:flex;gap:14px;">
+      <div style="flex:1;">
+        <label class="form-label">Type</label>
+        <select id="entry-type" class="form-select">
+          <option value="Coding">Coding</option>
+          <option value="System Design">System Design</option>
+          <option value="Behavioral">Behavioral</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label class="form-label">Difficulty</label>
+        <select id="entry-difficulty" class="form-select">
+          <option value="">— None —</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-group">
@@ -538,7 +571,7 @@
 <div id="toast" class="toast"></div>
 
 <!-- Contribution map strip -->
-<div id="contrib-strip" style="flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 20px 8px;overflow-x:auto;">
+<div id="contrib-strip" style="flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 20px 8px;overflow-x:auto;text-align:center;">
   <div id="contrib-map" style="display:inline-block;"></div>
 </div>
 
@@ -654,6 +687,44 @@
     return data.filter(f => f.name.endsWith('.md') && f.name !== '.gitkeep');
   }
 
+  async function apiGetMeta() {
+    const res = await fetch(`${API}/repos/${state.repo}/contents/_summaries/_meta.json`, { headers: headers() });
+    if (res.status === 404) return { data: {}, sha: null };
+    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+    const file = await res.json();
+    return { data: JSON.parse(decodeB64(file.content)), sha: file.sha };
+  }
+
+  async function apiPutMeta(data, sha) {
+    return apiPutFile('_summaries/_meta.json', JSON.stringify(data, null, 2), sha);
+  }
+
+  // Parse a day's file → meta entry. Pass null content to remove the day.
+  function parseFileMeta(content) {
+    const entries = parseEntries(content);
+    let easy = 0, medium = 0, systemDesign = 0;
+    entries.forEach(e => {
+      const diffMatch = e.body.match(/\*\*Difficulty:\*\*\s*(\w+)/i);
+      const diff = diffMatch ? diffMatch[1].toLowerCase() : '';
+      if (diff === 'easy') easy++;
+      if (diff === 'medium') medium++;
+      if (e.type.toLowerCase().includes('design')) systemDesign++;
+    });
+    return { easy, medium, systemDesign, qualified: easy >= 1 && medium >= 1 && systemDesign >= 1 };
+  }
+
+  // Fetch _meta.json, update one day's entry, write back. content=null removes the day.
+  async function updateDayMeta(dateStr, content) {
+    const { data, sha } = await apiGetMeta();
+    if (content === null) {
+      delete data[dateStr];
+    } else {
+      data[dateStr] = parseFileMeta(content);
+    }
+    await apiPutMeta(data, sha);
+    renderContribMap(data);
+  }
+
   async function apiGetFile(path) {
     const res = await fetch(`${API}/repos/${state.repo}/contents/${path}`, { headers: headers() });
     if (!res.ok) throw new Error(`GitHub API ${res.status}`);
@@ -722,9 +793,14 @@
       return '<div class="plog-placeholder"><span>No entries in this file.</span></div>';
     }
     return entries.map((e, idx) => {
+      const diffMatch      = e.body.match(/\*\*Difficulty:\*\*\s*(\w+)/i);
       const linkMatch      = e.body.match(/\*\*Link:\*\*\s*(\S+)/i);
       const statementMatch = e.body.match(/\*\*Problem Statement:\*\*\s*([\s\S]*?)(?=\*\*Solution:\*\*|\*\*[A-Z]|$)/i);
       const solutionMatch  = e.body.match(/\*\*Solution:\*\*\s*([\s\S]*?)(?=\*\*[A-Z]|$)/i);
+
+      const difficulty = diffMatch ? diffMatch[1] : '';
+      const diffHtml = difficulty
+        ? `<span class="diff-badge ${difficulty.toLowerCase()}">${difficulty}</span>` : '';
 
       const linkHtml = linkMatch
         ? `<a href="${escapeHtml(linkMatch[1])}" target="_blank" class="entry-problem-link">↗ View Problem</a>`
@@ -745,6 +821,7 @@
         <div class="entry-card">
           <div class="entry-card-header">
             <span class="type-badge ${badgeCls}">${e.type}</span>
+            ${diffHtml}
             <span class="entry-card-title">${escapeHtml(e.name)}</span>
             ${linkHtml}
             <div class="entry-card-actions">
@@ -824,6 +901,88 @@
     }
   }
 
+  // ── Contribution map ──────────────────────────────────────────────────────
+
+  function renderContribMap(metaCache) {
+    const WEEKS = 36, CELL = 13, GAP = 3, STEP = CELL + GAP;
+    const LEFT = 18, MONTH_H = 14;
+
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay());          // this Sunday
+    start.setDate(start.getDate() - (WEEKS - 1) * 7);        // go back WEEKS-1 weeks
+
+    const weeks = [];
+    const cur = new Date(start);
+    for (let w = 0; w < WEEKS; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+        const meta = metaCache[ds];
+        week.push({ ds, meta, future: cur > today, month: cur.getMonth(), date: new Date(cur) });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+
+    const W = LEFT + WEEKS * STEP;
+    const H = MONTH_H + 7 * STEP;
+    let svg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;">`;
+
+    // Month labels
+    let lastMonth = -1;
+    weeks.forEach((wk, wi) => {
+      if (wk[0].month !== lastMonth) {
+        const label = wk[0].date.toLocaleDateString('en-US', { month: 'short' });
+        svg += `<text x="${LEFT + wi * STEP}" y="11" font-size="10" fill="#999" font-family="sans-serif">${label}</text>`;
+        lastMonth = wk[0].month;
+      }
+    });
+
+    // Day labels
+    ['', 'M', '', 'W', '', 'F', ''].forEach((lbl, di) => {
+      if (lbl) svg += `<text x="0" y="${MONTH_H + di * STEP + CELL - 1}" font-size="9" fill="#bbb" font-family="sans-serif">${lbl}</text>`;
+    });
+
+    // Cells
+    weeks.forEach((wk, wi) => {
+      wk.forEach((day, di) => {
+        const x = LEFT + wi * STEP, y = MONTH_H + di * STEP;
+        let fill = '#ebedf0', cursor = 'default';
+        let titleExtra = '';
+
+        if (!day.future && day.meta) {
+          const { easy, medium, systemDesign, qualified } = day.meta;
+          const parts = [
+            `Easy: ${easy >= 1 ? '✓' : '✗'}`,
+            `Medium: ${medium >= 1 ? '✓' : '✗'}`,
+            `System Design: ${systemDesign >= 1 ? '✓' : '✗'}`,
+          ];
+          titleExtra = '\n' + parts.join('  ');
+          if (qualified) {
+            fill = '#40c463'; cursor = 'pointer';   // fully done → green
+          } else {
+            fill = '#fde68a'; cursor = 'pointer';   // partial → amber
+          }
+        }
+
+        svg += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="2" fill="${fill}" style="cursor:${cursor}" data-date="${day.ds}" data-qualified="${day.meta?.qualified ? '1' : ''}">`;
+        svg += `<title>${day.ds}${titleExtra}</title></rect>`;
+      });
+    });
+
+    svg += '</svg>';
+
+    const el = document.getElementById('contrib-map');
+    el.innerHTML = svg;
+
+    el.querySelectorAll('rect[data-date]').forEach(rect => {
+      if (rect.dataset.qualified === '1' || rect.getAttribute('fill') === '#fde68a') {
+        rect.addEventListener('click', () => selectDay(rect.dataset.date));
+      }
+    });
+  }
+
   // ── Load days ──────────────────────────────────────────────────────────────
 
   async function loadDays() {
@@ -831,10 +990,13 @@
     list.innerHTML = '<div class="plog-placeholder"><div class="plog-spinner"></div></div>';
 
     try {
-      const files = await apiListSummaries();
-      state.files = files
-        .sort((a, b) => b.name.localeCompare(a.name)); // newest first
+      const [files, { data: metaData }] = await Promise.all([
+        apiListSummaries(),
+        apiGetMeta(),
+      ]);
+      state.files = files.sort((a, b) => b.name.localeCompare(a.name));
       renderDayCards();
+      renderContribMap(metaData);
 
       // Auto-select today if it exists
       const today = todayStr();
@@ -865,12 +1027,14 @@
     document.getElementById('entry-type').value = e.type;
     document.getElementById('entry-submit-btn').textContent = 'Save Changes';
 
+    const diffMatch      = e.body.match(/\*\*Difficulty:\*\*\s*(\w+)/i);
     const linkMatch      = e.body.match(/\*\*Link:\*\*\s*(\S+)/i);
     const statementMatch = e.body.match(/\*\*Problem Statement:\*\*\s*([\s\S]*?)(?=\*\*Solution:\*\*|\*\*[A-Z]|$)/i);
     const solutionMatch  = e.body.match(/\*\*Solution:\*\*\s*([\s\S]*?)(?=\*\*[A-Z]|$)/i);
-    document.getElementById('entry-link').value      = linkMatch      ? linkMatch[1].trim()      : '';
-    document.getElementById('entry-statement').value = statementMatch ? statementMatch[1].trim() : '';
-    document.getElementById('entry-solution').value  = solutionMatch  ? solutionMatch[1].trim()  : e.body;
+    document.getElementById('entry-difficulty').value = diffMatch      ? diffMatch[1]             : '';
+    document.getElementById('entry-link').value        = linkMatch      ? linkMatch[1].trim()      : '';
+    document.getElementById('entry-statement').value   = statementMatch ? statementMatch[1].trim() : '';
+    document.getElementById('entry-solution').value    = solutionMatch  ? solutionMatch[1].trim()  : e.body;
 
     document.getElementById('entry-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('entry-name').focus(), 50);
@@ -887,8 +1051,9 @@
 
   // ── New entry ──────────────────────────────────────────────────────────────
 
-  function formatEntryMarkdown(name, type, link, statement, solution) {
+  function formatEntryMarkdown(name, type, difficulty, link, statement, solution) {
     const parts = [`## [${type}] ${name}`, ''];
+    if (difficulty) parts.push(`**Difficulty:** ${difficulty}`, '');
     if (link.trim()) {
       parts.push(`**Link:** ${link.trim()}`, '');
     }
@@ -901,10 +1066,10 @@
     return parts.join('\n');
   }
 
-  async function submitEntry(name, type, link, statement, solution) {
+  async function submitEntry(name, type, difficulty, link, statement, solution) {
     const today = todayStr();
     const filePath = `_summaries/${today}.md`;
-    const newEntry = formatEntryMarkdown(name, type, link, statement, solution);
+    const newEntry = formatEntryMarkdown(name, type, difficulty, link, statement, solution);
 
     let existingContent = null;
     let existingSha = null;
@@ -933,7 +1098,7 @@
       state.files.unshift({ name: today + '.md', path: filePath, sha: existingSha });
     }
 
-    // Refresh
+    await updateDayMeta(today, finalContent);
     await loadDays();
     selectDay(today);
   }
@@ -956,6 +1121,7 @@
           headers: headers(),
           body: JSON.stringify({ message: `plog: delete ${filePath}`, sha, branch: BRANCH }),
         });
+        await updateDayMeta(dateStr, null);   // remove from _meta.json
         state.files = state.files.filter(f => f.name !== dateStr + '.md');
         state.selected = null;
         renderDayCards();
@@ -965,6 +1131,7 @@
       } else {
         const finalContent = frontmatter + '\n' + chunks.join('\n\n') + '\n';
         await apiPutFile(filePath, finalContent, sha);
+        await updateDayMeta(dateStr, finalContent);   // update _meta.json
 
         // Re-render immediately from local state — don't re-fetch (avoids cache lag)
         const remaining = entries.filter((_, i) => i !== entryIndex);
@@ -987,13 +1154,14 @@
     }
   }
 
-  async function saveEditedEntry(name, type, link, statement, solution) {
+  async function saveEditedEntry(name, type, difficulty, link, statement, solution) {
     const { dateStr, entryIndex } = state.editMode;
     const filePath = `_summaries/${dateStr}.md`;
     const { content, sha } = await apiGetFile(filePath);
-    const updatedEntry = formatEntryMarkdown(name, type, link, statement, solution);
+    const updatedEntry = formatEntryMarkdown(name, type, difficulty, link, statement, solution);
     const finalContent = replaceEntryInContent(content, entryIndex, updatedEntry);
     await apiPutFile(filePath, finalContent, sha);
+    await updateDayMeta(dateStr, finalContent);
     selectDay(dateStr);
   }
 
@@ -1026,8 +1194,10 @@
     document.getElementById('entry-modal-subtitle').textContent = 'Adding to ' + formatDisplayDate(today);
     document.getElementById('entry-name').value = '';
     document.getElementById('entry-type').value = 'Coding';
+    document.getElementById('entry-difficulty').value = '';
+    document.getElementById('entry-link').value = '';
+    document.getElementById('entry-statement').value = '';
     document.getElementById('entry-solution').value = '';
-    document.getElementById('entry-comments').value = '';
     document.getElementById('entry-submit-btn').textContent = 'Post Entry';
     document.getElementById('entry-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('entry-name').focus(), 50);
@@ -1046,11 +1216,12 @@
   });
 
   document.getElementById('entry-submit-btn').addEventListener('click', async () => {
-    const name      = document.getElementById('entry-name').value.trim();
-    const type      = document.getElementById('entry-type').value;
-    const link      = document.getElementById('entry-link').value.trim();
-    const statement = document.getElementById('entry-statement').value;
-    const solution  = document.getElementById('entry-solution').value;
+    const name       = document.getElementById('entry-name').value.trim();
+    const type       = document.getElementById('entry-type').value;
+    const difficulty = document.getElementById('entry-difficulty').value;
+    const link       = document.getElementById('entry-link').value.trim();
+    const statement  = document.getElementById('entry-statement').value;
+    const solution   = document.getElementById('entry-solution').value;
 
     if (!name) { showToast('Problem name required', true); return; }
     if (!solution.trim() && !statement.trim()) { showToast('Add a solution or problem statement', true); return; }
@@ -1062,10 +1233,10 @@
 
     try {
       if (isEdit) {
-        await saveEditedEntry(name, type, link, statement, solution);
+        await saveEditedEntry(name, type, difficulty, link, statement, solution);
         showToast('Entry updated ✓');
       } else {
-        await submitEntry(name, type, link, statement, solution);
+        await submitEntry(name, type, difficulty, link, statement, solution);
         showToast('Entry saved ✓');
       }
       document.getElementById('entry-modal').classList.add('hidden');
