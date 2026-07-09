@@ -125,20 +125,23 @@ title: Home
 
     <br/><br/>
 
-    <strong>Role:</strong> Senior Software Engineer (AI and Docgen)
+    <strong>Role:</strong> Senior AI Engineer, Document Generation Platform
 
     <br/><br/>
 
     <strong>Impact Created:</strong>
     <ul>
-      <li>Built advanced DOCX-grade document formatting capabilities (indentation, margin controls, colored highlights, font/table styling) impacting over <strong>200,000 existing documents</strong></li>
-      <li>Implemented full header/footer support comparable to Microsoft Word, enabling <strong>enterprise-grade document compliance</strong> and unlocking <strong>new revenue opportunities</strong></li>
-      <li>Partnered with product and legal stakeholders to translate document-layout requirements into scalable backend abstractions</li>
+      <li>Conceived, architected, and <strong>solely built an LLM-as-judge evaluation platform from 0 to 1</strong> — full product ownership of scope, system design, backend services, and frontend UI — establishing EvenUp's first systematic quality-measurement layer for AI-generated legal documents</li>
+      <li>Designed the evaluation methodology and scoring rubrics across <strong>three quality pillars</strong> (writing quality, factual correctness, formatting fidelity) and three run modes (on-demand, sampled live-traffic, scheduled benchmark), evaluating <strong>600–800 documents/week</strong></li>
+      <li>Built the full stack solo — evaluation orchestration and LLM-judge pipelines on the backend, results dashboards and defect drill-down on the frontend — taking the platform from prototype to a production system used daily across the org</li>
+      <li>Drove business adoption by embedding the platform into a <strong>weekly SME-in-the-loop review cycle</strong>, closing the loop between automated scoring and human judgment and making it the org's operating cadence for document-quality management</li>
+      <li>Used eval-platform findings to prioritize DOCX-grade document formatting (indentation, margin controls, colored highlights, font/table styling, full header/footer support comparable to Microsoft Word) across <strong>200,000+ production documents</strong>, unlocking new enterprise revenue opportunities</li>
     </ul>
   </div>
   <div class="tech-stack">
     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" class="tech-logo" title="Python" />
     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" alt="FastAPI" class="tech-logo" title="FastAPI" />
+    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo" title="TypeScript" />
     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" class="tech-logo" title="PostgreSQL" />
     <img src="/assets/logos/temporal.png" alt="Temporal" class="tech-logo" title="Temporal" />
     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="Kubernetes" class="tech-logo" title="Kubernetes" />

@@ -10,17 +10,18 @@ Toronto, ON · Canadian Citizen, US TN Visa eligible
 
 ## Summary
 
-Senior engineer with 10+ years building ML platforms, applied AI systems, and backend infrastructure at scale. Recently architected an end-to-end LLM-as-judge evaluation platform for legal document generation — 600–800 documents evaluated per week across writing quality, factual correctness, and formatting. Prior platform work spans config-driven data infrastructure at 30 TB/day, workflow orchestration on Kubernetes, secure inference gateways, and Spark-based ETL adopted across 20+ teams. Currently focused on LLM serving and inference systems.
+Senior engineer with 10+ years building ML platforms, applied AI systems, and backend infrastructure at scale. Sole engineer on an LLM-as-judge evaluation platform taken from 0 to 1 — full frontend and backend, architecture through production — now the core quality-measurement product for AI-generated legal documents at EvenUp, evaluating 600–800 documents/week and driving a weekly SME-reviewed quality-improvement loop adopted org-wide. Prior platform work spans config-driven data infrastructure at 30 TB/day, workflow orchestration on Kubernetes, secure inference gateways, and Spark-based ETL adopted across 20+ teams. Strong systems orientation across full-stack product ownership, Python backends, distributed compute, and cloud-native infrastructure (AWS, Kubernetes).
 
 ## Experience
 
 **Senior AI Engineer, Document Generation Platform — EvenUp** *(Aug 2025 – Present)*
 
-- Architected and solo-shipped an end-to-end LLM-as-judge evaluation platform for the DocGen organization — full frontend and backend designed and implemented — scoring generated legal documents across three quality pillars: writing quality, factual correctness, and formatting.
-- Designed three evaluation run modes — on-demand manual runs, sampled auto-runs against live production traffic, and scheduled weekly runs over curated benchmark datasets — evaluating 600–800 documents per week and producing actionable defect reports.
-- Established an SME-in-the-loop feedback workflow where weekly eval reports drive subject-matter-expert annotations that continuously harden both the eval framework and the underlying document-generation quality.
-- Led design and rollout of DOCX-grade formatting capabilities (indentation, margin controls, table styles, full header/footer support) comparable to Microsoft Word, raising the document-quality bar for Case Companion's enterprise customers.
-- Coordinated safe rollout of pipeline changes affecting 200K+ production documents, ensuring backward compatibility and zero data loss through deterministic rendering and migration validation.
+- Conceived, architected, and solely built an LLM-as-judge evaluation platform from 0 to 1 — full product ownership of scope, system design, backend services, and frontend UI — establishing EvenUp's first systematic quality-measurement layer for AI-generated legal documents, with zero prior tooling to build on.
+- Designed the evaluation methodology and scoring rubrics across three quality pillars — writing quality, factual correctness, and formatting fidelity — and engineered three complementary run modes (on-demand manual runs, sampled auto-runs against live production traffic, and scheduled weekly runs over curated benchmark datasets) to evaluate 600–800 documents per week.
+- Built the full stack as a single-owner engineer: backend evaluation orchestration and LLM-judge pipelines, scoring persistence and reporting APIs, and a frontend for run configuration, results dashboards, and defect drill-down — taking the platform from prototype to a production system used daily across the org.
+- Drove business adoption by embedding the platform into a weekly SME-in-the-loop review cycle: eval reports surface systematic defects that subject-matter experts annotate, closing the loop between automated scoring and human judgment and making the platform the org's operating cadence for document-quality management.
+- Used eval-platform findings to prioritize and lead the rollout of DOCX-grade formatting capabilities (indentation, margin controls, table styles, full header/footer support) comparable to Microsoft Word, directly raising the document-quality bar for Case Companion's enterprise customers.
+- Leveraged the evaluation platform as the safety net for coordinating pipeline changes across 200K+ production documents, ensuring backward compatibility and zero data loss through deterministic rendering and migration validation.
 
 **Senior MLOps Engineer, ML & Data Infrastructure — Ripple** *(Nov 2022 – Apr 2025)*
 
@@ -54,7 +55,7 @@ Senior engineer with 10+ years building ML platforms, applied AI systems, and ba
 
 ## Skills
 
-**LLM & Applied AI:** LLM-as-judge evaluation, eval harness design, factuality & quality scoring frameworks, sampled live-traffic evaluation, SME-in-the-loop annotation workflows.
+**LLM & Applied AI:** LLM-as-judge evaluation, 0-to-1 eval platform design (full-stack), eval harness & scoring-rubric design, factuality & quality scoring frameworks, sampled live-traffic evaluation, SME-in-the-loop annotation workflows, eval-driven product development.
 
 **Languages:** Python (expert), SQL, TypeScript, Bash, Go (working), C/C++ (prior).
 
