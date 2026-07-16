@@ -1,0 +1,116 @@
+[
+  {
+    "name": "Arrays & Hashing",
+    "recognize": ["Need O(1) lookup/existence checks", "Counting frequencies", "Finding duplicates or complements"],
+    "checklist": ["Ask if array is sorted", "Consider hash map for complement/frequency lookup", "Watch for O(n^2) brute force you can collapse to O(n)"],
+    "mistakes": ["Reaching for nested loops before considering a map", "Not handling duplicate keys/values correctly"]
+  },
+  {
+    "name": "Two Pointers",
+    "recognize": ["Sorted array or linked list", "Pair/triplet sum problems", "Palindrome checks", "Comparing from both ends"],
+    "checklist": ["Sort first if order doesn't matter", "Move the pointer on the 'worse' side", "Handle duplicates by skipping equal adjacent values"],
+    "mistakes": ["Forgetting to skip duplicates in 3Sum-style problems", "Off-by-one when pointers cross"]
+  },
+  {
+    "name": "Sliding Window",
+    "recognize": ["Contiguous subarray/substring", "Longest/shortest satisfying a condition", "'At most K' or frequency constraints"],
+    "checklist": ["Expand right pointer", "Check if window is invalid", "Shrink left until valid again", "Update answer at the right point (usually after shrinking)"],
+    "mistakes": ["Updating the answer before shrinking back to valid", "Forgetting to remove zero-count entries from the frequency map", "Using a fixed-size window pattern for a variable-size problem"]
+  },
+  {
+    "name": "Stack",
+    "recognize": ["Matching/balancing (parens, tags)", "Next greater/smaller element", "Undo/backtrack-style processing", "Monotonic sequences"],
+    "checklist": ["Decide monotonic increasing vs decreasing", "Pop while the condition is violated before pushing", "Track indices, not just values, when you need distances"],
+    "mistakes": ["Pushing values when you need indices", "Not popping everything at the end for 'remaining' elements"]
+  },
+  {
+    "name": "Binary Search",
+    "recognize": ["Sorted array", "Monotonic answer space ('can we do X with capacity Y?')", "Minimize/maximize under a feasibility check"],
+    "checklist": ["Define search space and what 'true'/'false' means at a value", "Use while l <= r for exact match, l < r for boundary search", "Compute mid as l + (r-l)/2 to avoid overflow"],
+    "mistakes": ["Infinite loop from wrong l/r update", "Off-by-one between l <= r and l < r templates", "Not recognizing a monotonic-answer binary search (binary search on the answer)"]
+  },
+  {
+    "name": "Linked List",
+    "recognize": ["Reversal, cycle detection, merging lists", "Fast/slow pointer problems", "In-place manipulation without extra space"],
+    "checklist": ["Use a dummy head node for edge cases at the start", "Draw the pointer rewiring before coding", "Consider fast/slow pointers for cycle or middle-node problems"],
+    "mistakes": ["Losing the reference to the next node before rewiring", "Forgetting to handle empty list or single-node list"]
+  },
+  {
+    "name": "Trees",
+    "recognize": ["Traversal (pre/in/post/level order)", "Path sum / depth problems", "Any/all node property checks"],
+    "checklist": ["Decide recursive (top-down or bottom-up) vs iterative with a stack/queue", "Define clearly what each recursive call returns", "Consider level-order (BFS) when the problem is about levels/width"],
+    "mistakes": ["Conflating top-down (pass state down) with bottom-up (return state up) designs", "Not handling null nodes explicitly"]
+  },
+  {
+    "name": "BST",
+    "recognize": ["Search/insert/delete with order guarantees", "Kth smallest/largest", "Validate BST property"],
+    "checklist": ["Use the in-order traversal = sorted sequence property", "Prune one subtree instead of searching both when possible", "For validation, pass down (min, max) bounds"],
+    "mistakes": ["Validating BST by only comparing to immediate children instead of ancestor bounds", "Ignoring the O(log n) advantage and treating it like a generic tree"]
+  },
+  {
+    "name": "Trie",
+    "recognize": ["Prefix search/autocomplete", "Word search over a dictionary", "'Starts with' queries"],
+    "checklist": ["Node = map of children + isEndOfWord flag", "Insert/search both walk character by character", "Consider a trie whenever repeated prefix work would be wasteful with a hash set"],
+    "mistakes": ["Forgetting the isEndOfWord flag (breaks prefix vs full-word distinction)", "Using a fixed 26-array child map when the alphabet isn't just lowercase a-z"]
+  },
+  {
+    "name": "Heap / Priority Queue",
+    "recognize": ["Kth largest/smallest", "Top-K elements", "Merge K sorted lists/streams", "Scheduling by priority"],
+    "checklist": ["Decide min-heap vs max-heap based on what you're evicting", "For 'top K', keep a heap of size K, not size N", "Consider a heap when you repeatedly need the current min/max after updates"],
+    "mistakes": ["Using a max-heap of size N when a min-heap of size K is O(n log k) better", "Forgetting Python's heapq is min-heap only (negate for max-heap)"]
+  },
+  {
+    "name": "Backtracking",
+    "recognize": ["Generate all subsets/permutations/combinations", "Constraint satisfaction (N-Queens, Sudoku)", "'Explore all paths and undo'"],
+    "checklist": ["Choose → explore → un-choose (backtrack) on every recursive branch", "Prune early when a partial state can't lead to a valid answer", "Track visited state and undo it after recursing"],
+    "mistakes": ["Forgetting to undo state (visited flags, current path) after the recursive call", "Not pruning, causing avoidable exponential blowup"]
+  },
+  {
+    "name": "Graph BFS",
+    "recognize": ["Shortest path in unweighted graph", "Level-by-level exploration", "Minimum number of steps/moves"],
+    "checklist": ["Use a queue and mark visited at enqueue time (not dequeue time)", "Track distance/level alongside each node", "Consider multi-source BFS when multiple valid starting points"],
+    "mistakes": ["Marking visited on dequeue instead of enqueue, causing duplicate work", "Using BFS when the graph is weighted (should be Dijkstra instead)"]
+  },
+  {
+    "name": "Graph DFS",
+    "recognize": ["Connected components", "Cycle detection", "Exploring the entire reachable region", "Island/grid flood-fill problems"],
+    "checklist": ["Mark visited before/at recursion to avoid infinite loops", "Recursive DFS vs iterative with an explicit stack (watch recursion depth)", "For directed graphs, track 'in current path' separately from 'visited' to detect cycles"],
+    "mistakes": ["Stack overflow on deep/recursive DFS for large inputs — consider iterative", "Not distinguishing 'visited overall' from 'visited in current recursion path' for cycle detection"]
+  },
+  {
+    "name": "Union Find",
+    "recognize": ["Dynamic connectivity queries", "Detecting cycles in undirected graphs", "Grouping/merging sets incrementally"],
+    "checklist": ["Implement with path compression + union by rank/size", "find() should recursively compress the path to the root", "A cycle exists if union() is called on two nodes already in the same set"],
+    "mistakes": ["Skipping path compression/union by rank, degrading to O(n) per operation", "Forgetting union find is for undirected connectivity, not directed reachability"]
+  },
+  {
+    "name": "Topological Sort",
+    "recognize": ["Task scheduling with dependencies", "Course prerequisite problems", "Any 'ordering that respects a DAG' requirement"],
+    "checklist": ["Kahn's algorithm: track in-degree, process nodes with in-degree 0", "Or DFS-based: post-order the nodes, then reverse", "A cycle exists if you can't process all nodes (result length < node count)"],
+    "mistakes": ["Not detecting the cycle case (assuming the graph is always a valid DAG)", "Confusing edge direction — 'a before b' means an edge a → b"]
+  },
+  {
+    "name": "DP 1D",
+    "recognize": ["Optimal value depends on a running decision (take/skip)", "Climbing stairs / house robber / coin change style", "State reducible to a single index"],
+    "checklist": ["Define dp[i] precisely in words before coding", "Write the recurrence relation from the definition", "Consider rolling the array down to O(1) space once it works"],
+    "mistakes": ["Vague dp[i] definition leading to a wrong recurrence", "Off-by-one in base cases (dp[0], dp[1])"]
+  },
+  {
+    "name": "DP 2D",
+    "recognize": ["Two sequences being compared (edit distance, LCS)", "Grid path problems", "State needs two indices to describe"],
+    "checklist": ["Define dp[i][j] precisely before coding", "Fill order matters — know which cells must be computed first", "Consider compressing to two 1D rows if only the previous row is needed"],
+    "mistakes": ["Wrong iteration order causing use of an uncomputed cell", "Not handling the empty-prefix (row/col 0) base cases"]
+  },
+  {
+    "name": "Greedy",
+    "recognize": ["Local optimal choice seems to lead to global optimal", "Interval scheduling / activity selection", "Problem says 'maximize/minimize' with an obvious sorting order"],
+    "checklist": ["Sort by the criterion that makes the greedy choice obvious", "Prove (even informally) that greedy doesn't miss a better global solution", "If greedy fails on an example, it's probably a DP problem instead"],
+    "mistakes": ["Assuming greedy works without checking a counterexample", "Sorting by the wrong key (e.g., start time vs end time)"]
+  },
+  {
+    "name": "Intervals",
+    "recognize": ["Merge/insert overlapping intervals", "Meeting room / scheduling conflicts", "Any 'ranges that might overlap' problem"],
+    "checklist": ["Sort by start (or end, depending on the problem) first", "Overlap condition: current.start <= previous.end", "For 'minimum rooms/resources', consider a min-heap of end times or a sweep line"],
+    "mistakes": ["Forgetting to sort before merging", "Using <= vs < incorrectly at the overlap boundary"]
+  }
+]

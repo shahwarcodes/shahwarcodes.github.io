@@ -1,0 +1,133 @@
+[
+  {
+    "name": "Array",
+    "type": "Data Structure",
+    "summary": "Contiguous fixed-layout memory. Fast random access, expensive to resize or shift.",
+    "complexity": { "access": "O(1)", "search": "O(n)", "insert (end)": "O(1) amortized", "insert (middle)": "O(n)", "delete": "O(n)" }
+  },
+  {
+    "name": "Linked List",
+    "type": "Data Structure",
+    "summary": "Nodes with pointers to the next (and prev, if doubly). No resizing cost, no random access.",
+    "complexity": { "access": "O(n)", "search": "O(n)", "insert (head)": "O(1)", "delete (head)": "O(1)" }
+  },
+  {
+    "name": "Stack",
+    "type": "Data Structure",
+    "summary": "LIFO. Push/pop from the same end. Backing store is usually an array or linked list.",
+    "complexity": { "push": "O(1)", "pop": "O(1)", "peek": "O(1)" }
+  },
+  {
+    "name": "Queue",
+    "type": "Data Structure",
+    "summary": "FIFO. Use collections.deque in Python — a list is O(n) to pop from the front.",
+    "complexity": { "enqueue": "O(1)", "dequeue": "O(1)", "peek": "O(1)" }
+  },
+  {
+    "name": "Hash Map / Set",
+    "type": "Data Structure",
+    "summary": "Key → bucket via hash function. Average O(1) ops; degrades to O(n) on heavy collisions.",
+    "complexity": { "insert (avg)": "O(1)", "search (avg)": "O(1)", "delete (avg)": "O(1)", "worst case": "O(n)" }
+  },
+  {
+    "name": "Binary Tree",
+    "type": "Data Structure",
+    "summary": "Each node has at most 2 children. No ordering guarantee — that's what makes it a BST instead.",
+    "complexity": { "search (balanced)": "O(log n)", "search (skewed)": "O(n)", "traversal": "O(n)" }
+  },
+  {
+    "name": "Binary Search Tree",
+    "type": "Data Structure",
+    "summary": "Left < node < right at every subtree. In-order traversal yields sorted order.",
+    "complexity": { "search (avg)": "O(log n)", "insert (avg)": "O(log n)", "delete (avg)": "O(log n)", "worst (unbalanced)": "O(n)" }
+  },
+  {
+    "name": "Heap / Priority Queue",
+    "type": "Data Structure",
+    "summary": "Complete binary tree stored in an array. Min-heap or max-heap — root is always the extreme.",
+    "complexity": { "peek": "O(1)", "insert": "O(log n)", "extract-min/max": "O(log n)", "build heap": "O(n)" }
+  },
+  {
+    "name": "Trie",
+    "type": "Data Structure",
+    "summary": "Tree of characters. Each node = map of children + end-of-word flag. Great for prefix queries.",
+    "complexity": { "insert": "O(L)", "search": "O(L)", "prefix search": "O(L)" },
+    "template": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_word = False\n\nclass Trie:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def insert(self, word):\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_word = True\n\n    def search(self, word):\n        node = self.root\n        for ch in word:\n            if ch not in node.children:\n                return False\n            node = node.children[ch]\n        return node.is_word"
+  },
+  {
+    "name": "Graph (Adjacency List)",
+    "type": "Data Structure",
+    "summary": "Map of node -> list of neighbors. Space-efficient for sparse graphs (E << V^2).",
+    "complexity": { "space": "O(V + E)", "traversal": "O(V + E)" }
+  },
+  {
+    "name": "Union-Find (Disjoint Set)",
+    "type": "Data Structure",
+    "summary": "Tracks connectivity between elements. Path compression + union by rank make it nearly O(1).",
+    "complexity": { "find": "O(α(n)) amortized", "union": "O(α(n)) amortized" },
+    "template": "class UnionFind:\n    def __init__(self, n):\n        self.parent = list(range(n))\n        self.rank = [0] * n\n\n    def find(self, x):\n        if self.parent[x] != x:\n            self.parent[x] = self.find(self.parent[x])  # path compression\n        return self.parent[x]\n\n    def union(self, a, b):\n        ra, rb = self.find(a), self.find(b)\n        if ra == rb:\n            return False\n        if self.rank[ra] < self.rank[rb]:\n            ra, rb = rb, ra\n        self.parent[rb] = ra\n        if self.rank[ra] == self.rank[rb]:\n            self.rank[ra] += 1\n        return True"
+  },
+  {
+    "name": "Binary Search",
+    "type": "Algorithm",
+    "summary": "Halve the search space each step. Requires sorted data or a monotonic feasibility check.",
+    "complexity": { "time": "O(log n)", "space": "O(1)" },
+    "template": "def binary_search(nums, target):\n    l, r = 0, len(nums) - 1\n    while l <= r:\n        mid = l + (r - l) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            l = mid + 1\n        else:\n            r = mid - 1\n    return -1"
+  },
+  {
+    "name": "BFS",
+    "type": "Algorithm",
+    "summary": "Level-by-level traversal using a queue. Finds shortest path in an unweighted graph.",
+    "complexity": { "time": "O(V + E)", "space": "O(V)" },
+    "template": "from collections import deque\n\ndef bfs(graph, start):\n    visited = {start}\n    queue = deque([start])\n    order = []\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nei in graph[node]:\n            if nei not in visited:\n                visited.add(nei)\n                queue.append(nei)\n    return order"
+  },
+  {
+    "name": "DFS",
+    "type": "Algorithm",
+    "summary": "Explore as deep as possible before backtracking. Recursive or iterative with an explicit stack.",
+    "complexity": { "time": "O(V + E)", "space": "O(V)" },
+    "template": "def dfs(graph, node, visited=None):\n    if visited is None:\n        visited = set()\n    visited.add(node)\n    for nei in graph[node]:\n        if nei not in visited:\n            dfs(graph, nei, visited)\n    return visited"
+  },
+  {
+    "name": "Two-Pointer Skeleton",
+    "type": "Algorithm",
+    "summary": "Two indices moving toward/away from each other over sorted or linear data.",
+    "complexity": { "time": "O(n)", "space": "O(1)" },
+    "template": "def two_pointer(nums, target):\n    l, r = 0, len(nums) - 1\n    while l < r:\n        s = nums[l] + nums[r]\n        if s == target:\n            return [l, r]\n        elif s < target:\n            l += 1\n        else:\n            r -= 1\n    return []"
+  },
+  {
+    "name": "Backtracking Skeleton",
+    "type": "Algorithm",
+    "summary": "Choose, explore, un-choose. Prune early whenever the partial state can't lead to a valid answer.",
+    "complexity": { "time": "problem-dependent (often exponential)", "space": "O(depth)" },
+    "template": "def backtrack(path, choices, results):\n    if is_solution(path):\n        results.append(path[:])\n        return\n    for choice in choices:\n        if not is_valid(path, choice):\n            continue\n        path.append(choice)\n        backtrack(path, next_choices(choices, choice), results)\n        path.pop()  # undo"
+  },
+  {
+    "name": "Dynamic Programming (1D bottom-up)",
+    "type": "Algorithm",
+    "summary": "Build up from base cases using a recurrence. Define dp[i] in words before writing the transition.",
+    "complexity": { "time": "O(n) typical", "space": "O(n), or O(1) with rolling variables" },
+    "template": "def dp_bottom_up(n):\n    dp = [0] * (n + 1)\n    dp[0] = 1  # base case\n    for i in range(1, n + 1):\n        dp[i] = dp[i - 1] + (dp[i - 2] if i >= 2 else 0)  # transition\n    return dp[n]"
+  },
+  {
+    "name": "Merge Sort",
+    "type": "Algorithm",
+    "summary": "Divide, sort halves, merge. Stable and predictable — good when worst-case guarantees matter.",
+    "complexity": { "time": "O(n log n)", "space": "O(n)" },
+    "template": "def merge_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    mid = len(arr) // 2\n    left, right = merge_sort(arr[:mid]), merge_sort(arr[mid:])\n    merged, i, j = [], 0, 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            merged.append(left[i]); i += 1\n        else:\n            merged.append(right[j]); j += 1\n    merged.extend(left[i:])\n    merged.extend(right[j:])\n    return merged"
+  },
+  {
+    "name": "Quick Sort",
+    "type": "Algorithm",
+    "summary": "Partition around a pivot, recurse on both sides. Fast in practice, worst case on bad pivots.",
+    "complexity": { "time (avg)": "O(n log n)", "time (worst)": "O(n^2)", "space": "O(log n) avg" },
+    "template": "def quick_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    mid = [x for x in arr if x == pivot]\n    right = [x for x in arr if x > pivot]\n    return quick_sort(left) + mid + quick_sort(right)"
+  },
+  {
+    "name": "Dijkstra's Algorithm",
+    "type": "Algorithm",
+    "summary": "Shortest path in a weighted graph with non-negative edges, using a min-heap of (distance, node).",
+    "complexity": { "time": "O((V + E) log V)", "space": "O(V)" },
+    "template": "import heapq\n\ndef dijkstra(graph, start):\n    dist = {start: 0}\n    heap = [(0, start)]\n    while heap:\n        d, node = heapq.heappop(heap)\n        if d > dist.get(node, float('inf')):\n            continue\n        for nei, w in graph[node]:\n            nd = d + w\n            if nd < dist.get(nei, float('inf')):\n                dist[nei] = nd\n                heapq.heappush(heap, (nd, nei))\n    return dist"
+  }
+]

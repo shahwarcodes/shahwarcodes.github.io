@@ -1,0 +1,90 @@
+[
+  {
+    "category": "Caching",
+    "points": [
+      "When: reduce read latency and DB load for hot, repeatedly-read data",
+      "Redis (rich data structures, persistence options) vs Memcached (simpler, pure in-memory)",
+      "Write-through: write to cache and DB together — consistent, slower writes",
+      "Write-back: write to cache first, flush to DB later — fast writes, risk of data loss",
+      "Write-around: write straight to DB, cache fills on next read",
+      "Eviction policies: LRU, LFU, TTL-based expiry",
+      "Cache stampede: many requests miss simultaneously and hammer the DB — mitigate with locking, request coalescing, or jittered TTLs"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Message Queues",
+    "points": [
+      "When: decouple producers/consumers, smooth traffic spikes, enable async processing",
+      "Kafka: high-throughput log, ordered within a partition, consumers track their own offsets, good for event streaming/replay",
+      "RabbitMQ: traditional broker, flexible routing (exchanges), good for task queues with complex routing",
+      "SQS: managed, simple, at-least-once delivery, good default when you don't want to run infra",
+      "Delivery guarantees: at-most-once vs at-least-once vs exactly-once (rare, expensive)",
+      "Idempotency matters on the consumer side once you accept at-least-once delivery"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Load Balancing",
+    "points": [
+      "L4 (transport layer): routes by IP/port, fast, protocol-agnostic",
+      "L7 (application layer): routes by content (URL path, headers), enables smarter routing but adds latency",
+      "Sticky sessions: pin a client to one backend — simplifies stateful apps but hurts even load distribution",
+      "Algorithms: round robin, least connections, weighted, consistent hashing (good for cache-backed services to minimize reshuffling)",
+      "Health checks are what make failover actually work"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Databases",
+    "points": [
+      "SQL: strong consistency, joins, transactions — good when relationships and integrity matter",
+      "NoSQL: flexible schema, horizontal scale — good for high write throughput or unstructured/semi-structured data",
+      "Sharding: split data across nodes by a shard key — watch for hot shards and cross-shard queries/joins",
+      "Replication: leader-follower (read scaling, single write point) vs multi-leader/leaderless (write scaling, conflict resolution needed)",
+      "CAP theorem: under a network partition, choose Consistency or Availability — most real systems tune this per use case rather than picking one absolutely"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Rate Limiting",
+    "points": [
+      "Token bucket: tokens refill at a fixed rate, request consumes a token — allows bursts up to bucket size",
+      "Leaky bucket: requests processed at a fixed rate regardless of burstiness — smooths traffic, no bursts allowed",
+      "Fixed window: simple counter per time window — vulnerable to burst at window boundaries",
+      "Sliding window (log or counter): smooths the boundary problem, more accurate, more memory/compute",
+      "Where to enforce it: client, API gateway, or per-service — usually gateway for a shared limit"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Consistency Models",
+    "points": [
+      "Strong consistency: every read sees the latest write — simpler mental model, costs latency/availability",
+      "Eventual consistency: replicas converge over time — higher availability, stale reads possible",
+      "Read-your-writes / session consistency: a middle ground often good enough for user-facing features",
+      "Tie back to CAP: the consistency model you pick is really a partition-tolerance trade-off decision"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Storage",
+    "points": [
+      "Blob/object storage (S3-style): flat namespace, great for large immutable files (images, videos, backups), not for frequent small updates",
+      "File storage: hierarchical, POSIX-like access, good for shared file systems (NFS/EFS)",
+      "Block storage: raw disk volumes attached to a single instance (EBS-style), used under databases/VMs",
+      "Metadata (structure, permissions, references) is usually stored separately from the raw blob itself"
+    ],
+    "learnings": []
+  },
+  {
+    "category": "Search",
+    "points": [
+      "Elasticsearch/OpenSearch: inverted index for full-text search, good for relevance ranking, filtering, aggregations",
+      "Not a source of truth — usually synced from a primary DB via CDC or dual writes",
+      "Sharding + replicas same as other distributed stores — tune for read-heavy search workloads",
+      "Consider when 'search by keyword/relevance' can't be done efficiently with plain DB indexes"
+    ],
+    "learnings": []
+  }
+]
