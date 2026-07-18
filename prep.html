@@ -138,7 +138,7 @@
 
   /* ─── Pattern cards ─── */
   .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-  .pattern-card, .sd-card {
+  .pattern-card, .sd-card, .dsa-card {
     background: #fff; border: 1px solid #eceef4; border-radius: 14px;
     padding: 18px 20px; border-top: 4px solid #ccc;
     box-shadow: 0 1px 3px rgba(0,0,0,0.03);
@@ -153,8 +153,8 @@
     font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
     color: #aaa; margin: 12px 0 5px;
   }
-  .pattern-card ul, .sd-card ul { margin: 0; padding-left: 18px; font-size: 12.8px; color: #444; line-height: 1.6; }
-  .pattern-card li, .sd-card li { margin-bottom: 2px; }
+  .pattern-card ul, .sd-card ul, .dsa-card ul { margin: 0; padding-left: 18px; font-size: 12.8px; color: #444; line-height: 1.6; }
+  .pattern-card li, .sd-card li, .dsa-card li { margin-bottom: 2px; }
 
   /* ─── Pattern goal tracker (1 Easy + 1 Medium) ─── */
   .pattern-card.goal-complete { border-top-color: #10b981; box-shadow: 0 0 0 1.5px #10b98133, 0 1px 3px rgba(0,0,0,0.03); }
@@ -361,7 +361,7 @@
         `<span class="complexity-chip">${escapeHtml(k)}: <b>${escapeHtml(v)}</b></span>`).join('');
       const codeHtml = d.template ? `<div class="sec-label">Template</div><div class="code-block">${escapeHtml(d.template)}</div>` : '';
       return `
-        <div class="pattern-card" style="border-top-color:${c}">
+        <div class="dsa-card" style="border-top-color:${c}">
           <div class="card-head">
             <h3 class="card-title">${escapeHtml(d.name)}<span class="type-tag" style="background:${c}">${escapeHtml(d.type)}</span></h3>
           </div>

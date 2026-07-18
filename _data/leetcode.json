@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "problem": "Add Two Numbers",
+    "link": "https://leetcode.com/problems/add-two-numbers/",
+    "pattern": "Linked List",
+    "difficulty": "Medium",
+    "status": "Solved",
+    "date": "2026-07-17",
+    "mistake": "Early `if not l1: return l2` / `if not l2: return l1` guards were redundant — the main loop's `l1 or l2 or c != 0` condition already handles either list starting empty.",
+    "insight": "Dummy head + carry variable, loop while `l1 or l2 or carry != 0` — that condition alone handles a trailing carry (e.g. 5+5) without a special case at the end."
+  },
+  {
+    "problem": "Longest Common Prefix",
+    "link": "https://leetcode.com/problems/longest-common-prefix/",
+    "pattern": "Trie",
+    "difficulty": "Easy",
+    "status": "Solved",
+    "date": "2026-07-17",
+    "mistake": "",
+    "insight": "Scan column-by-column using strs[0] as the reference; checking `i == len(strs[j])` before indexing catches a shorter string ending mid-comparison, doubling as both the bounds check and the mismatch condition."
+  }
+]
